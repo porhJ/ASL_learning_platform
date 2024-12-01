@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<style>
+   .center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 25%;
+   } 
+</style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Hand Gesture Recognition</title>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.0.0/dist/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Real-Time Hand Gesture Recognition</h1>
+    <p id="gesture" style="text-align: center; font-size: 360%;"></p>
+    <video id="video" width="640" height="480" autoplay class="center"></video>
+    <canvas id="canvas" width="640" height="480" hidden></canvas>
+    <img src="\static\instruction.png" width="100px" class="center"/>
+    <p id="correctness" style="text-align: center; font-size: 360%;"></p>
+    <p id="current" style="text-align: center; font-size: 360%;"></p>
+    <button id="next" style="height:80px;width: 150px;" class="center">Next Gesture</button>
+
+    <script>
+        // Initialize socket connection
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Access the webcam
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                video.srcObject = stream;
+            });
+        
+        socket.on('AssignedGesture', function(data) {
+            document.getElementById("gesture").innerHTML = "Do: " + data.gesture;  // Update HTML with new gesture
+        });
+        
+        video.addEventListener('play', function() {
+            const sendFrame = () => {
+                context.drawImage(video, 0, 0, 640, 480);
+                canvas.toBlob(function(blob) {
+                    socket.emit('message', blob);
+                }, 'image/jpeg');
+                setTimeout(sendFrame, 100); // Send a frame every 100ms
+            };
+            sendFrame();
+        });
+        
+        socket.on('correctness', function(data) {
+            document.getElementById("correctness").innerHTML = data.correctness
+        })
+
+        socket.on('current_gesture', function(data) {
+            document.getElementById("current").innerHTML = "You're doing " + data.current
+        })
+
+        // Receive processed frames from the server and display on canvas
+        socket.on('video_feed', function(frame_data) {
+            const img = new Image();
+            img.src = 'data:image/jpeg;base64,' + btoa(String.fromCharCode.apply(null, new Uint8Array(frame_data)));
+            img.onload = function() {
+                context.drawImage(img, 0, 0, 640, 480);
+            };
+        }); 
+        document.getElementById('next').addEventListener('click', function() {
+            socket.emit('next');
+        });
+    </script>
+    
+</body>
+</html>
