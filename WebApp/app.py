@@ -39,10 +39,30 @@ def on_connect():
     print("Client connected")
     socketio.emit('AssignedGesture', {'gesture': tgesture})
 
-@socketio.on('next')
+@socketio.on('A-lesson')
 def next_gesture():
     global tgesture
-    tgesture = np.random.choice(glist)
+    tgesture = "A"
+
+@socketio.on('B-lesson')
+def next_gesture():
+    global tgesture
+    tgesture = "B"
+
+@socketio.on('C-lesson')
+def next_gesture():
+    global tgesture
+    tgesture = "C"
+
+@socketio.on('D-lesson')
+def next_gesture():
+    global tgesture
+    tgesture = "D"
+
+@socketio.on('E-lesson')
+def next_gesture():
+    global tgesture
+    tgesture = "E"
 
 def assigned_gesture():
     global tgesture
